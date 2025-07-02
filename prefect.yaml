@@ -1,0 +1,21 @@
+name: scrape-boe-project
+prefect-version: 2.20.20
+
+deployments:
+- name: scrape-boe
+  entrypoint: flows/scrape_and_store.py:scrape_and_store
+  parameters:
+    url: https://www.boe.es/diario_boe/xml.php?id=BOE-A-2025-13297
+    filename: boe_13297.txt
+  work_queue_name: default
+  version:
+  tags: []
+  description:
+  work_pool:
+    name: default-agent-pool
+    work_queue_name:
+    job_variables: {}
+  schedules: []
+  pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /home/ivan/Code/github/ivandome/rag_pipeline

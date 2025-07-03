@@ -90,6 +90,28 @@ Existen dos maneras principales de ejecutar los flujos:
     ```
     Puedes modificar `main.py` para ejecutar otros flujos o cambiar parámetros.
 
+    **Nota sobre `PREFECT_API_URL`:** Si al ejecutar `python main.py` encuentras un error similar a `ValueError: No Prefect API URL provided...`, significa que Prefect está intentando conectarse a un servidor backend y no encuentra la configuración. Para ejecuciones locales de desarrollo con `main.py` que interactúan con el motor de Prefect, puedes necesitar:
+
+    *   **Iniciar un servidor Prefect local (opcional, si deseas usar la UI y características del backend):**
+        En una terminal separada, ejecuta:
+        ```bash
+        prefect server start
+        ```
+        Esto iniciará un servidor local (usualmente en `http://127.0.0.1:4200`).
+
+    *   **Configurar la URL de la API:**
+        Una vez que el servidor esté en funcionamiento (o si te conectas a otra instancia de Prefect), configura la variable de entorno `PREFECT_API_URL` en la terminal donde ejecutarás `main.py`:
+        ```bash
+        export PREFECT_API_URL="http://127.0.0.1:4200/api"
+        # Para Windows (cmd.exe): set PREFECT_API_URL="http://127.0.0.1:4200/api"
+        # Para Windows (PowerShell): $env:PREFECT_API_URL="http://127.0.0.1:4200/api"
+        ```
+        Alternativamente, puedes configurar esto en tu perfil de Prefect:
+        ```bash
+        prefect profile set-api-url http://127.0.0.1:4200/api
+        ```
+        Si prefieres ejecutar los flujos de `main.py` sin un backend (de forma completamente efímera y local, perdiendo características como la UI o el historial de ejecuciones persistente), asegúrate de que tu configuración de Prefect o la forma en que se invocan los flujos no requieran explícitamente un servidor. Para pruebas simples, a veces invocar la función del flujo directamente con `.fn()` (ej. `nombre_del_flujo.fn(...)`) puede evitar la necesidad de un backend, pero esto es más para pruebas unitarias de la lógica del flujo que para una ejecución completa con el motor Prefect.
+
 2.  **Mediante Despliegues de Prefect:**
     El archivo `prefect.yaml` define un despliegue llamado `scrape-boe` para el flujo `scrape_and_store`.
     *   **Construir el despliegue (si es la primera vez o hay cambios):**

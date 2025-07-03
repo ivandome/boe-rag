@@ -15,7 +15,10 @@ def test_scrape_boe_day_metadata_flow(
     mock_get_article_metadata,
     mock_append_metadata
 ):
-    test_fecha = "2023-01-01"
+    test_url_date_str = "2023/01/01"
+    expected_year, expected_month, expected_day = "2023", "01", "01"
+    expected_fecha_yyyymmdd = "2023-01-01"
+
 
     # Configure mocks
     mock_fetch_index_xml.return_value = "<xml>dummy index</xml>"
@@ -28,16 +31,16 @@ def test_scrape_boe_day_metadata_flow(
     ]
 
     # Call the flow's function directly
-    scrape_boe_day_metadata.fn(fecha=test_fecha)
+    scrape_boe_day_metadata.fn(url_date_str=test_url_date_str)
 
     # Assertions
-    mock_fetch_index_xml.assert_called_once_with(test_fecha)
+    mock_fetch_index_xml.assert_called_once_with(expected_year, expected_month, expected_day)
     mock_extract_article_ids.assert_called_once_with("<xml>dummy index</xml>")
 
     # Check calls to get_article_metadata
     expected_get_metadata_calls = [
-        call("ID-1", test_fecha),
-        call("ID-2", test_fecha)
+        call("ID-1", expected_fecha_yyyymmdd),
+        call("ID-2", expected_fecha_yyyymmdd)
     ]
     mock_get_article_metadata.assert_has_calls(expected_get_metadata_calls, any_order=False)
     assert mock_get_article_metadata.call_count == 2
@@ -60,14 +63,16 @@ def test_scrape_boe_day_metadata_flow_no_ids(
     mock_get_article_metadata,
     mock_append_metadata
 ):
-    test_fecha = "2023-01-02"
+    test_url_date_str = "2023/01/02"
+    expected_year, expected_month, expected_day = "2023", "01", "02"
+    # expected_fecha_yyyymmdd is not used here as get_article_metadata should not be called
 
     mock_fetch_index_xml.return_value = "<xml>empty index</xml>"
     mock_extract_article_ids.return_value = [] # No IDs found
 
-    scrape_boe_day_metadata.fn(fecha=test_fecha)
+    scrape_boe_day_metadata.fn(url_date_str=test_url_date_str)
 
-    mock_fetch_index_xml.assert_called_once_with(test_fecha)
+    mock_fetch_index_xml.assert_called_once_with(expected_year, expected_month, expected_day)
     mock_extract_article_ids.assert_called_once_with("<xml>empty index</xml>")
 
     # Ensure these were NOT called if no IDs

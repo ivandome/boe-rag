@@ -9,4 +9,4 @@ if __name__ == "__main__":
     # )
 
     # Test run for scape and process a day articles
-    scrape_boe_day_metadata("2025-06-28")
+    scrape_boe_day_metadata("2025/06/28")

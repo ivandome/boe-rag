@@ -18,6 +18,23 @@ def test_fetch_index_xml_success(mock_get):
     assert result == "<xml>test data</xml>"
 
 @patch('tasks.boe.requests.get')
+def test_fetch_index_xml_success_with_capture(mock_get, capsys):
+    mock_response = MagicMock()
+    mock_response.text = "<xml>test data</xml>"
+    mock_response.raise_for_status = MagicMock()
+    mock_get.return_value = mock_response
+
+    fecha = "2023-01-01"
+    result = fetch_index_xml.fn(fecha)
+    print(f"Resultado de fetch_index_xml: {result}")
+
+    captured = capsys.readouterr()
+    assert "<xml>test data</xml>" in captured.out
+    mock_get.assert_called_once_with(f"https://www.boe.es/diario_boe/xml.php?fecha={fecha}")
+    mock_response.raise_for_status.assert_called_once()
+    assert result == "<xml>test data</xml>"
+
+@patch('tasks.boe.requests.get')
 def test_fetch_index_xml_http_error(mock_get):
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock(side_effect=requests.exceptions.HTTPError("Test HTTP Error"))
@@ -30,7 +47,7 @@ def test_fetch_index_xml_http_error(mock_get):
     mock_get.assert_called_once_with(f"https://www.boe.es/diario_boe/xml.php?fecha={fecha}")
     mock_response.raise_for_status.assert_called_once()
 
-def test_extract_article_ids():
+def test_extract_article_ids(capsys):
     sample_xml_content = """
     <document>
         <item id="BOE-A-2023-12345"/>
@@ -40,14 +57,24 @@ def test_extract_article_ids():
     </document>
     """
     expected_ids = ["BOE-A-2023-12345", "BOE-A-2023-67890"]
+    result = extract_article_ids.fn(sample_xml_content)
+    print(f"Resultado de extract_article_ids: {result}")
     # Sorting because set does not guarantee order
-    assert sorted(extract_article_ids.fn(sample_xml_content)) == sorted(expected_ids)
+    assert sorted(result) == sorted(expected_ids)
+    captured = capsys.readouterr()
+    assert "BOE-A-2023-12345" in captured.out
+    assert "BOE-A-2023-67890" in captured.out
 
-def test_extract_article_ids_no_matches():
+
+def test_extract_article_ids_no_matches(capsys):
     sample_xml_content = "<document><item id='OTHER-ID-123'/></document>"
-    assert extract_article_ids.fn(sample_xml_content) == []
+    result = extract_article_ids.fn(sample_xml_content)
+    print(f"Resultado de extract_article_ids_no_matches: {result}")
+    assert result == []
+    captured = capsys.readouterr()
+    assert "[]" in captured.out
 
-def test_get_article_metadata():
+def test_get_article_metadata(capsys):
     boe_id = "BOE-A-2023-12345"
     fecha = "2023-01-01"
     expected_metadata = {
@@ -56,4 +83,9 @@ def test_get_article_metadata():
         "url_xml": f"https://www.boe.es/diario_boe/xml.php?id={boe_id}",
         "url_pdf": f"https://www.boe.es/boe/dias/{fecha}/pdfs/{boe_id}.pdf"
     }
-    assert get_article_metadata.fn(boe_id, fecha) == expected_metadata
+    result = get_article_metadata.fn(boe_id, fecha)
+    print(f"Resultado de get_article_metadata: {result}")
+    assert result == expected_metadata
+    captured = capsys.readouterr()
+    assert boe_id in captured.out
+    assert fecha in captured.out

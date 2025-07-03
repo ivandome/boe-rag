@@ -64,13 +64,9 @@ El sistema ofrece las siguientes capacidades:
     # venv\Scripts\activate    # En Windows
     ```
 3.  **Instalar dependencias:**
-    Actualmente, no se proporciona un archivo `requirements.txt`. Las dependencias principales son `prefect`, `requests`, y `beautifulsoup4`. Puedes instalarlas manualmente:
+    El proyecto incluye un archivo `requirements.txt` con todas las dependencias necesarias, incluyendo las de desarrollo como `pytest`. Para instalarlas:
     ```bash
-    pip install prefect requests beautifulsoup4
-    ```
-    Se recomienda generar un archivo `requirements.txt` para facilitar la gestión de dependencias:
-    ```bash
-    pip freeze > requirements.txt
+    pip install -r requirements.txt
     ```
 
 ## Configuración
@@ -112,6 +108,27 @@ Existen dos maneras principales de ejecutar los flujos:
         prefect agent start -q default
         ```
         Luego, puedes ejecutar el flujo desde la UI de Prefect o mediante la CLI.
+
+## Pruebas
+
+Este proyecto utiliza `pytest` para la ejecución de pruebas unitarias y de integración, y `pytest-cov` para medir la cobertura de código.
+
+Para ejecutar las pruebas:
+
+1.  **Asegúrate de tener las dependencias de desarrollo instaladas:**
+    Si seguiste la sección de "Instalación", ya deberías tener `pytest` y `pytest-cov` instalados desde `requirements.txt`. Si no, instálalas:
+    ```bash
+    pip install pytest pytest-cov
+    # o reinstala todas las dependencias
+    # pip install -r requirements.txt
+    ```
+
+2.  **Ejecutar Pytest:**
+    Desde la raíz del repositorio, ejecuta el siguiente comando:
+    ```bash
+    pytest
+    ```
+    Esto descubrirá y ejecutará automáticamente todas las pruebas en el directorio `tests/`. También generará un informe de cobertura en la terminal y un archivo `coverage.xml`.
 
 ## Posibles Mejoras / Próximos Pasos
 

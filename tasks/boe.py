@@ -6,8 +6,11 @@ BOE_BASE = "https://www.boe.es"
 
 
 @task
-def fetch_index_xml(fecha: str) -> str:
-    url = f"{BOE_BASE}/diario_boe/xml.php?fecha={fecha}"
+def fetch_index_xml(year: str, month: str, day: str) -> str:
+    # Format month and day to be zero-padded if necessary (e.g., 7 -> 07)
+    month_padded = month.zfill(2)
+    day_padded = day.zfill(2)
+    url = f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month_padded}{day_padded}"
     r = requests.get(url)
     r.raise_for_status()
     return r.text
@@ -22,11 +25,23 @@ def extract_article_ids(index_xml: str) -> list[str]:
 
 @task
 def get_article_metadata(boe_id: str, fecha: str) -> dict:
-    url_xml = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"
-    url_pdf = f"https://www.boe.es/boe/dias/{fecha}/pdfs/{boe_id}.pdf"
+    # fecha is expected in YYYY-MM-DD format
+    # For url_pdf, we need to parse fecha into YYYY, MM, DD
+    # e.g., fecha = "2025-07-03" -> year="2025", month="07", day="03"
+    try:
+        year, month, day = fecha.split('-')
+    except ValueError:
+        # Handle cases where fecha might not be in the expected format, though previous steps should ensure this.
+        # Alternatively, raise an error or log. For now, try to proceed if possible or adjust.
+        # This part might need more robust error handling or assumptions based on strict input.
+        # Assuming fecha is always "YYYY-MM-DD" as prepared by scrape_boe_day_metadata
+        raise ValueError(f"Fecha format is incorrect in get_article_metadata: {fecha}. Expected YYYY-MM-DD.")
+
+    url_xml = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}" # This remains unchanged as per current understanding
+    url_pdf = f"https://www.boe.es/boe/dias/{year}/{month.zfill(2)}/{day.zfill(2)}/pdfs/{boe_id}.pdf"
     return {
         "id": boe_id,
-        "fecha": fecha,
+        "fecha": fecha, # Keep original fecha for metadata record
         "url_xml": url_xml,
         "url_pdf": url_pdf
     }

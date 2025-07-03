@@ -1,0 +1,10 @@
+# Ignorar fichero de covertura
+.coverage
+coverage.xml
+
+# Ignorar todas las carpetas __pycache__ en todo el repo
+__pycache__/
+**/__pycache__/
+
+# Ignorar todos los archivos .pyc y .pyo por si acaso
+*.py[cod]

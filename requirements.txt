@@ -1,0 +1,5 @@
+prefect
+requests
+beautifulsoup4
+pytest
+pytest-cov

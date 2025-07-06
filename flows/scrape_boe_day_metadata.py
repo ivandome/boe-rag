@@ -18,13 +18,10 @@ def scrape_boe_day_metadata(url_date_str: str = "2025/07/03"):
     index_boes = fetch_index_xml(year, month, day)
     boe_ids = extract_article_ids(index_boes)
 
-    # Reconstruct fecha in YYYY-MM-DD format for get_article_metadata
-    # and potentially for other uses if the PDF URL format still needs it.
-    fecha_yyyymmdd = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+    # Reconstruct the date in YYYY-MM-DD format for get_article_metadata
+    date_iso = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
 
     for boe_id in boe_ids:
-        # Pass the original year, month, day for consistency if needed,
-        # or the reconstructed fecha_yyyymmdd.
-        # Based on current get_article_metadata, it expects fecha in YYYY-MM-DD for PDF URLs.
-        metadata = get_article_metadata(boe_id, fecha_yyyymmdd)
+        # Pass the reconstructed date in YYYY-MM-DD for PDF URLs
+        metadata = get_article_metadata(boe_id, date_iso)
         append_metadata(metadata)

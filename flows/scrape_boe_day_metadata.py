@@ -1,6 +1,10 @@
 from prefect import flow
 from tasks.storage import append_metadata
-from tasks.boe import fetch_boes_from_data, extract_article_ids, get_article_metadata
+from tasks.boe import (
+    fetch_index_xml,
+    extract_article_ids,
+    get_article_metadata,
+)
 
 
 @flow
@@ -11,7 +15,7 @@ def scrape_boe_day_metadata(url_date_str: str = "2025/07/03"):
         raise ValueError("url_date_str must be in YYYY/MM/DD format")
     year, month, day = parts[0], parts[1], parts[2]
 
-    index_boes = fetch_boes_from_data(year, month, day)
+    index_boes = fetch_index_xml(year, month, day)
     boe_ids = extract_article_ids(index_boes)
 
     # Reconstruct fecha in YYYY-MM-DD format for get_article_metadata

@@ -1,6 +1,11 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from tasks.boe import fetch_index_xml, extract_article_ids, get_article_metadata
+from tasks.boe import (
+    fetch_index_xml,
+    fetch_index_xml_by_date,
+    extract_article_ids,
+    get_article_metadata,
+)
 import requests
 
 
@@ -8,15 +13,16 @@ import requests
 def test_fetch_index_xml_success(mock_get):
     mock_response = MagicMock()
     mock_response.text = "<xml>test data</xml>"
+    mock_response.headers = {"Content-Type": "application/xml"}
     mock_response.raise_for_status = MagicMock()
     mock_get.return_value = mock_response
 
     year, month, day = "2023", "01", "01"
-    # Test with unpadded month/day as well, assuming zfill in main code handles it
     result = fetch_index_xml.fn(year, month, day)
 
     mock_get.assert_called_once_with(
-        f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}"
+        f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}",
+        headers={"Accept": "application/xml"},
     )
     mock_response.raise_for_status.assert_called_once()
     assert result == "<xml>test data</xml>"
@@ -26,6 +32,7 @@ def test_fetch_index_xml_success(mock_get):
 def test_fetch_index_xml_success_with_capture(mock_get, capsys):
     mock_response = MagicMock()
     mock_response.text = "<xml>test data</xml>"
+    mock_response.headers = {"Content-Type": "text/xml"}
     mock_response.raise_for_status = MagicMock()
     mock_get.return_value = mock_response
 
@@ -36,7 +43,8 @@ def test_fetch_index_xml_success_with_capture(mock_get, capsys):
     captured = capsys.readouterr()
     assert "<xml>test data</xml>" in captured.out
     mock_get.assert_called_once_with(
-        f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}"
+        f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}",
+        headers={"Accept": "application/xml"},
     )
     mock_response.raise_for_status.assert_called_once()
     assert result == "<xml>test data</xml>"
@@ -45,6 +53,7 @@ def test_fetch_index_xml_success_with_capture(mock_get, capsys):
 @patch("tasks.boe.requests.get")
 def test_fetch_index_xml_http_error(mock_get):
     mock_response = MagicMock()
+    mock_response.headers = {"Content-Type": "application/xml"}
     mock_response.raise_for_status = MagicMock(
         side_effect=requests.exceptions.HTTPError("Test HTTP Error")
     )
@@ -57,9 +66,24 @@ def test_fetch_index_xml_http_error(mock_get):
         )  # Use padded values for consistency in test
 
     mock_get.assert_called_once_with(
-        f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}"
+        f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}",
+        headers={"Accept": "application/xml"},
     )
     mock_response.raise_for_status.assert_called_once()
+
+
+@patch("tasks.boe.requests.get")
+def test_fetch_index_xml_invalid_content_type(mock_get):
+    mock_response = MagicMock()
+    mock_response.text = "<html>Not XML</html>"
+    mock_response.headers = {"Content-Type": "text/html"}
+    mock_response.raise_for_status = MagicMock()
+    mock_get.return_value = mock_response
+
+    with pytest.raises(ValueError, match="no es XML"):
+        fetch_index_xml.fn("2023", "01", "01")
+
+    mock_get.assert_called_once()
 
 
 def test_extract_article_ids(capsys):
@@ -106,3 +130,19 @@ def test_get_article_metadata(capsys):
     captured = capsys.readouterr()
     assert boe_id in captured.out
     assert fecha in captured.out
+
+
+@patch("tasks.boe.fetch_index_xml.fn")
+def test_fetch_index_xml_by_date_success(mock_fetch):
+    mock_fetch.return_value = "<xml>test data</xml>"
+
+    fecha = "2025-06-28"
+    result = fetch_index_xml_by_date.fn(fecha)
+
+    mock_fetch.assert_called_once_with("2025", "06", "28")
+    assert result == "<xml>test data</xml>"
+
+
+def test_fetch_index_xml_by_date_invalid():
+    with pytest.raises(ValueError):
+        fetch_index_xml_by_date.fn("202506")

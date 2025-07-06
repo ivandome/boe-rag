@@ -5,6 +5,29 @@ import re
 BOE_BASE = "https://www.boe.es"
 
 
+def _parse_date_to_ymd(fecha: str) -> tuple[str, str, str]:
+    """Parsea una cadena de fecha y devuelve año, mes y día.
+
+    Acepta ``YYYY-MM-DD``, ``YYYY/MM/DD`` o ``YYYYMMDD``. Se eliminan
+    separadores y se valida que queden exactamente ocho dígitos.
+    """
+
+    digits = re.sub(r"\D", "", fecha)
+    if len(digits) != 8:
+        raise ValueError("La fecha debe contener año, mes y día (YYYYMMDD).")
+
+    return digits[:4], digits[4:6], digits[6:8]
+
+
+def _build_sumario_url(year: str, month: str, day: str) -> str:
+    """Construye la URL del índice diario del BOE."""
+
+    return (
+        f"{BOE_BASE}/datosabiertos/api/boe/sumario/"
+        f"{year}{month.zfill(2)}{day.zfill(2)}"
+    )
+
+
 @task
 def fetch_boes_from_data(year: str, month: str, day: str) -> str:
     month_padded = month.zfill(2)
@@ -17,13 +40,22 @@ def fetch_boes_from_data(year: str, month: str, day: str) -> str:
 
 @task
 def fetch_index_xml(year: str, month: str, day: str) -> str:
-    # Format month and day to be zero-padded if necessary (e.g., 7 -> 07)
-    month_padded = month.zfill(2)
-    day_padded = day.zfill(2)
-    url = f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month_padded}{day_padded}"
-    r = requests.get(url)
+    """Obtiene el índice XML diario dado año, mes y día."""
+
+    url = _build_sumario_url(year, month, day)
+    r = requests.get(url, headers={"Accept": "application/xml"})
     r.raise_for_status()
+    if "xml" not in r.headers.get("Content-Type", ""):
+        raise ValueError("La respuesta no es XML")
     return r.text
+
+
+@task
+def fetch_index_xml_by_date(fecha: str) -> str:
+    """Descarga el índice XML para una fecha dada."""
+
+    year, month, day = _parse_date_to_ymd(fecha)
+    return fetch_index_xml.fn(year, month, day)
 
 
 @task

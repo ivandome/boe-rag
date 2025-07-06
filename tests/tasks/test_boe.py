@@ -80,7 +80,7 @@ def test_fetch_index_xml_invalid_content_type(mock_get):
     mock_response.raise_for_status = MagicMock()
     mock_get.return_value = mock_response
 
-    with pytest.raises(ValueError, match="no es XML"):
+    with pytest.raises(ValueError, match="Response is not XML"):
         fetch_index_xml.fn("2023", "01", "01")
 
     mock_get.assert_called_once()
@@ -116,28 +116,28 @@ def test_extract_article_ids_no_matches(capsys):
 
 def test_get_article_metadata(capsys):
     boe_id = "BOE-A-2023-12345"
-    fecha = "2023-01-01"  # YYYY-MM-DD
-    year, month, day = fecha.split("-")
+    date_str = "2023-01-01"  # YYYY-MM-DD
+    year, month, day = date_str.split("-")
     expected_metadata = {
         "id": boe_id,
-        "fecha": fecha,  # This is the original fecha string
+        "date": date_str,  # Original date string
         "url_xml": f"https://www.boe.es/diario_boe/xml.php?id={boe_id}",
         "url_pdf": f"https://www.boe.es/boe/dias/{year}/{month}/{day}/pdfs/{boe_id}.pdf",  # Uses parsed components
     }
-    result = get_article_metadata.fn(boe_id, fecha)
+    result = get_article_metadata.fn(boe_id, date_str)
     print(f"Resultado de get_article_metadata: {result}")
     assert result == expected_metadata
     captured = capsys.readouterr()
     assert boe_id in captured.out
-    assert fecha in captured.out
+    assert date_str in captured.out
 
 
 @patch("tasks.boe.fetch_index_xml.fn")
 def test_fetch_index_xml_by_date_success(mock_fetch):
     mock_fetch.return_value = "<xml>test data</xml>"
 
-    fecha = "2025-06-28"
-    result = fetch_index_xml_by_date.fn(fecha)
+    date_str = "2025-06-28"
+    result = fetch_index_xml_by_date.fn(date_str)
 
     mock_fetch.assert_called_once_with("2025", "06", "28")
     assert result == "<xml>test data</xml>"

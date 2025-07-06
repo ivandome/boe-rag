@@ -5,22 +5,22 @@ import re
 BOE_BASE = "https://www.boe.es"
 
 
-def _parse_date_to_ymd(fecha: str) -> tuple[str, str, str]:
-    """Parsea una cadena de fecha y devuelve año, mes y día.
+def _parse_date_to_ymd(date_str: str) -> tuple[str, str, str]:
+    """Parse a date string and return year, month and day.
 
-    Acepta ``YYYY-MM-DD``, ``YYYY/MM/DD`` o ``YYYYMMDD``. Se eliminan
-    separadores y se valida que queden exactamente ocho dígitos.
+    Accepts ``YYYY-MM-DD``, ``YYYY/MM/DD`` or ``YYYYMMDD``. Separators are
+    removed and exactly eight digits are required.
     """
 
-    digits = re.sub(r"\D", "", fecha)
+    digits = re.sub(r"\D", "", date_str)
     if len(digits) != 8:
-        raise ValueError("La fecha debe contener año, mes y día (YYYYMMDD).")
+        raise ValueError("The date must contain year, month and day (YYYYMMDD).")
 
     return digits[:4], digits[4:6], digits[6:8]
 
 
 def _build_sumario_url(year: str, month: str, day: str) -> str:
-    """Construye la URL del índice diario del BOE."""
+    """Build the daily BOE index URL."""
 
     return (
         f"{BOE_BASE}/datosabiertos/api/boe/sumario/"
@@ -40,52 +40,52 @@ def fetch_boes_from_data(year: str, month: str, day: str) -> str:
 
 @task
 def fetch_index_xml(year: str, month: str, day: str) -> str:
-    """Obtiene el índice XML diario dado año, mes y día."""
+    """Get the daily XML index given year, month and day."""
 
     url = _build_sumario_url(year, month, day)
     r = requests.get(url, headers={"Accept": "application/xml"})
     r.raise_for_status()
     if "xml" not in r.headers.get("Content-Type", ""):
-        raise ValueError("La respuesta no es XML")
+        raise ValueError("Response is not XML")
     return r.text
 
 
 @task
-def fetch_index_xml_by_date(fecha: str) -> str:
-    """Descarga el índice XML para una fecha dada."""
+def fetch_index_xml_by_date(date_str: str) -> str:
+    """Download the XML index for a given date."""
 
-    year, month, day = _parse_date_to_ymd(fecha)
+    year, month, day = _parse_date_to_ymd(date_str)
     return fetch_index_xml.fn(year, month, day)
 
 
 @task
 def extract_article_ids(index_xml: str) -> list[str]:
-    # Extraer BOE-A-XXXX-YYYY usando regex
+    # Extract BOE-A-XXXX-YYYY using regex
     ids = re.findall(r"BOE-A-\d{4}-\d{5}", index_xml)
-    return list(set(ids))  # evitar duplicados
+    return list(set(ids))  # avoid duplicates
 
 
 @task
-def get_article_metadata(boe_id: str, fecha: str) -> dict:
-    # fecha is expected in YYYY-MM-DD format
-    # For url_pdf, we need to parse fecha into YYYY, MM, DD
-    # e.g., fecha = "2025-07-03" -> year="2025", month="07", day="03"
+def get_article_metadata(boe_id: str, date_str: str) -> dict:
+    # date_str is expected in YYYY-MM-DD format
+    # For url_pdf, we need to parse it into YYYY, MM, DD
+    # e.g., date_str = "2025-07-03" -> year="2025", month="07", day="03"
     try:
-        year, month, day = fecha.split("-")
+        year, month, day = date_str.split("-")
     except ValueError:
-        # Handle cases where fecha might not be in the expected format, though previous steps should ensure this.
+        # Handle cases where date_str might not be in the expected format, though previous steps should ensure this.
         # Alternatively, raise an error or log. For now, try to proceed if possible or adjust.
         # This part might need more robust error handling or assumptions based on strict input.
-        # Assuming fecha is always "YYYY-MM-DD" as prepared by scrape_boe_day_metadata
+        # Assuming date_str is always "YYYY-MM-DD" as prepared by scrape_boe_day_metadata
         raise ValueError(
-            f"Fecha format is incorrect in get_article_metadata: {fecha}. Expected YYYY-MM-DD."
+            f"Date format is incorrect in get_article_metadata: {date_str}. Expected YYYY-MM-DD."
         )
 
-    url_xml = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"  # This remains unchanged as per current understanding
+    url_xml = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"
     url_pdf = f"https://www.boe.es/boe/dias/{year}/{month.zfill(2)}/{day.zfill(2)}/pdfs/{boe_id}.pdf"
     return {
         "id": boe_id,
-        "fecha": fecha,  # Keep original fecha for metadata record
+        "date": date_str,  # Keep original date for metadata record
         "url_xml": url_xml,
         "url_pdf": url_pdf,
     }

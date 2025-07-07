@@ -6,6 +6,7 @@ from unittest.mock import call  # Import call for checking multiple calls
 from prefect.testing.utilities import prefect_test_harness
 
 
+@patch("flows.scrape_boe_day_metadata.init_db")
 @patch("flows.scrape_boe_day_metadata.insert_article")
 @patch("flows.scrape_boe_day_metadata.parse_article_xml")
 @patch("flows.scrape_boe_day_metadata.fetch_article_xml")
@@ -23,6 +24,7 @@ def test_scrape_boe_day_metadata_flow(
     mock_fetch_article_xml,
     mock_parse_article_xml,
     mock_insert_article,
+    mock_init_db,
 ):
     test_url_date_str = "2023/01/01"
     expected_year, expected_month, expected_day = "2023", "01", "01"
@@ -90,6 +92,7 @@ def test_scrape_boe_day_metadata_flow(
     assert mock_append_metadata.call_count == 2
 
 
+@patch("flows.scrape_boe_day_metadata.init_db")
 @patch("flows.scrape_boe_day_metadata.insert_article")
 @patch("flows.scrape_boe_day_metadata.parse_article_xml")
 @patch("flows.scrape_boe_day_metadata.fetch_article_xml")
@@ -107,6 +110,7 @@ def test_scrape_boe_day_metadata_flow_no_ids(
     mock_fetch_article_xml,
     mock_parse_article_xml,
     mock_insert_article,
+    mock_init_db,
 ):
     test_url_date_str = "2023/01/02"
     expected_year, expected_month, expected_day = "2023", "01", "02"

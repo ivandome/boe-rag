@@ -85,3 +85,13 @@ def article_exists(boe_id: str, db_path: str = "data/boe.db") -> bool:
     exists = cur.fetchone() is not None
     conn.close()
     return exists
+
+@task
+def fetch_all_articles(db_path: str = "data/boe.db") -> list[dict]:
+    """Return all articles with id, title and text."""
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute("SELECT id, title, text FROM articles")
+    rows = cur.fetchall()
+    conn.close()
+    return [{"id": r[0], "title": r[1], "text": r[2]} for r in rows]

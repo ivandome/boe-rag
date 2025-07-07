@@ -2,6 +2,7 @@ from prefect import task
 import sqlite3
 from pathlib import Path
 
+
 @task
 def init_db(db_path: str = "data/boe.db"):
     """Create SQLite database and required tables if they do not exist."""
@@ -39,6 +40,7 @@ def init_db(db_path: str = "data/boe.db"):
     conn.commit()
     conn.close()
 
+
 @task
 def insert_article(record: dict, text: str, db_path: str = "data/boe.db"):
     """Insert or replace article metadata and text into the database."""
@@ -72,3 +74,14 @@ def insert_article(record: dict, text: str, db_path: str = "data/boe.db"):
     )
     conn.commit()
     conn.close()
+
+
+@task
+def article_exists(boe_id: str, db_path: str = "data/boe.db") -> bool:
+    """Check if an article already exists in the database."""
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM articles WHERE id=?", (boe_id,))
+    exists = cur.fetchone() is not None
+    conn.close()
+    return exists

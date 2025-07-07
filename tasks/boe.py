@@ -123,14 +123,10 @@ def fetch_article_text(url_xml: str) -> tuple[dict, str]:
     r = requests.get(url_xml)
     r.raise_for_status()
     xml_text = r.text
-    root = ET.fromstring(xml_text)
-    title = root.findtext(".//titulo")
-    department = root.findtext(".//departamento")
-    rank = root.findtext(".//rango")
-    text = root.findtext(".//texto")
+    article_data = parse_article_xml.fn(xml_text)
     metadata = {
-        "title": title,
-        "department": department,
-        "rank": rank,
+        "title": article_data.get("title"),
+        "department": article_data.get("department"),
+        "rank": article_data.get("rank"),
     }
-    return metadata, text
+    return metadata, article_data.get("text")

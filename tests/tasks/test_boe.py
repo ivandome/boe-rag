@@ -5,6 +5,7 @@ from tasks.boe import (
     fetch_index_xml_by_date,
     extract_article_ids,
     get_article_metadata,
+    fetch_article_text,
 )
 import requests
 
@@ -146,3 +147,46 @@ def test_fetch_index_xml_by_date_success(mock_fetch):
 def test_fetch_index_xml_by_date_invalid():
     with pytest.raises(ValueError):
         fetch_index_xml_by_date.fn("202506")
+
+
+@patch("tasks.boe.requests.get")
+def test_fetch_article_text_success(mock_get):
+    sample_xml = """
+    <documento>
+        <titulo>Titulo de prueba</titulo>
+        <departamento>Departamento X</departamento>
+        <rango>Orden</rango>
+        <texto>Cuerpo del texto</texto>
+    </documento>
+    """
+    mock_response = MagicMock()
+    mock_response.text = sample_xml
+    mock_response.raise_for_status = MagicMock()
+    mock_get.return_value = mock_response
+
+    url = "http://example.com/test.xml"
+    metadata, text = fetch_article_text.fn(url)
+
+    mock_get.assert_called_once_with(url)
+    mock_response.raise_for_status.assert_called_once()
+    assert metadata == {
+        "title": "Titulo de prueba",
+        "department": "Departamento X",
+        "rank": "Orden",
+    }
+    assert text == "Cuerpo del texto"
+
+
+@patch("tasks.boe.requests.get")
+def test_fetch_article_text_http_error(mock_get):
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock(
+        side_effect=requests.exceptions.HTTPError("Network Error")
+    )
+    mock_get.return_value = mock_response
+
+    with pytest.raises(requests.exceptions.HTTPError, match="Network Error"):
+        fetch_article_text.fn("http://example.com/test.xml")
+
+    mock_get.assert_called_once_with("http://example.com/test.xml")
+    mock_response.raise_for_status.assert_called_once()

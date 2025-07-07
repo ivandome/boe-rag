@@ -115,3 +115,18 @@ def parse_article_xml(xml_text: str) -> dict:
         "rank": rank,
         "text": text,
     }
+
+
+@task
+def fetch_article_text(url_xml: str) -> tuple[dict, str]:
+    """Download an article XML and return metadata and text."""
+    r = requests.get(url_xml)
+    r.raise_for_status()
+    xml_text = r.text
+    article_data = parse_article_xml.fn(xml_text)
+    metadata = {
+        "title": article_data.get("title"),
+        "department": article_data.get("department"),
+        "rank": article_data.get("rank"),
+    }
+    return metadata, article_data.get("text")

@@ -10,7 +10,6 @@ from prefect.testing.utilities import prefect_test_harness
 @patch("flows.scrape_boe_day_metadata.parse_article_xml")
 @patch("flows.scrape_boe_day_metadata.fetch_article_xml")
 @patch("flows.scrape_boe_day_metadata.article_exists")
-@patch("flows.scrape_boe_day_metadata.append_metadata")
 @patch("flows.scrape_boe_day_metadata.get_article_metadata")
 @patch("flows.scrape_boe_day_metadata.extract_article_ids")
 @patch("flows.scrape_boe_day_metadata.fetch_index_xml")
@@ -18,7 +17,6 @@ def test_scrape_boe_day_metadata_flow(
     mock_fetch_index_xml,
     mock_extract_article_ids,
     mock_get_article_metadata,
-    mock_append_metadata,
     mock_article_exists,
     mock_fetch_article_xml,
     mock_parse_article_xml,
@@ -81,20 +79,11 @@ def test_scrape_boe_day_metadata_flow(
 
     assert mock_insert_article.call_count == 2
 
-    # Check calls to append_metadata
-    expected_append_calls = [
-        call({"id": "ID-1", "data": "meta1"}),
-        call({"id": "ID-2", "data": "meta2"}),
-    ]
-    mock_append_metadata.assert_has_calls(expected_append_calls, any_order=False)
-    assert mock_append_metadata.call_count == 2
-
 
 @patch("flows.scrape_boe_day_metadata.insert_article")
 @patch("flows.scrape_boe_day_metadata.parse_article_xml")
 @patch("flows.scrape_boe_day_metadata.fetch_article_xml")
 @patch("flows.scrape_boe_day_metadata.article_exists")
-@patch("flows.scrape_boe_day_metadata.append_metadata")
 @patch("flows.scrape_boe_day_metadata.get_article_metadata")
 @patch("flows.scrape_boe_day_metadata.extract_article_ids")
 @patch("flows.scrape_boe_day_metadata.fetch_index_xml")
@@ -102,7 +91,6 @@ def test_scrape_boe_day_metadata_flow_no_ids(
     mock_fetch_index_xml,
     mock_extract_article_ids,
     mock_get_article_metadata,
-    mock_append_metadata,
     mock_article_exists,
     mock_fetch_article_xml,
     mock_parse_article_xml,
@@ -124,7 +112,6 @@ def test_scrape_boe_day_metadata_flow_no_ids(
 
     # Ensure these were NOT called if no IDs
     mock_get_article_metadata.assert_not_called()
-    mock_append_metadata.assert_not_called()
     mock_article_exists.assert_not_called()
     mock_fetch_article_xml.assert_not_called()
     mock_parse_article_xml.assert_not_called()

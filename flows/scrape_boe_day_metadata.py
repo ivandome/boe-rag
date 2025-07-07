@@ -1,5 +1,4 @@
 from prefect import flow
-from tasks.storage import append_metadata
 from tasks.boe import (
     fetch_index_xml,
     extract_article_ids,
@@ -39,4 +38,3 @@ def scrape_boe_day_metadata(url_date_str: str = "2025/07/03"):
             "rank": article_data.get("rank"),
         }
         insert_article(record, article_data.get("text"))
-        append_metadata(metadata)

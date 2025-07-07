@@ -94,7 +94,9 @@ def test_extract_article_ids(capsys):
         <item id="BOE-A-2023-12345"/>
         <item id="BOE-S-2023-00123"/>
         <item id="BOE-A-2023-67890"/>
+        <other attr="BOE-A-2024-11111"/>
         <item id="BOE-A-2023-12345"/>
+        <text>BOE-A-9999-99999</text>
     </document>
     """
     expected_ids = ["BOE-A-2023-12345", "BOE-A-2023-67890"]
@@ -108,7 +110,12 @@ def test_extract_article_ids(capsys):
 
 
 def test_extract_article_ids_no_matches(capsys):
-    sample_xml_content = "<document><item id='OTHER-ID-123'/></document>"
+    sample_xml_content = """
+    <document>
+        <text>BOE-A-2025-00001</text>
+        <other attr='BOE-A-2025-00002'/>
+    </document>
+    """
     result = extract_article_ids.fn(sample_xml_content)
     print(f"Resultado de extract_article_ids_no_matches: {result}")
     assert result == []

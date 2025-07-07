@@ -7,7 +7,7 @@ from tasks.boe import (
     fetch_article_xml,
     parse_article_xml,
 )
-from tasks.database import insert_article, article_exists
+from tasks.database import init_db, insert_article, article_exists
 
 
 @flow
@@ -17,6 +17,9 @@ def scrape_boe_day_metadata(url_date_str: str = "2025/07/03"):
     if len(parts) != 3:
         raise ValueError("url_date_str must be in YYYY/MM/DD format")
     year, month, day = parts[0], parts[1], parts[2]
+
+    # Ensure database is initialized
+    init_db()
 
     index_boes = fetch_index_xml(year, month, day)
     boe_ids = extract_article_ids(index_boes)

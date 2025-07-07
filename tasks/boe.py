@@ -115,3 +115,22 @@ def parse_article_xml(xml_text: str) -> dict:
         "rank": rank,
         "text": text,
     }
+
+
+@task
+def fetch_article_text(url_xml: str) -> tuple[dict, str]:
+    """Download an article XML and return metadata and text."""
+    r = requests.get(url_xml)
+    r.raise_for_status()
+    xml_text = r.text
+    root = ET.fromstring(xml_text)
+    title = root.findtext(".//titulo")
+    department = root.findtext(".//departamento")
+    rank = root.findtext(".//rango")
+    text = root.findtext(".//texto")
+    metadata = {
+        "title": title,
+        "department": department,
+        "rank": rank,
+    }
+    return metadata, text

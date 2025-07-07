@@ -17,5 +17,5 @@ deployments:
     job_variables: {}
   schedules: []
   pull:
-  - prefect.deployments.steps.set_working_directory:
-      directory: /home/ivan/Code/github/ivandome/rag_pipeline
+    - prefect.deployments.steps.set_working_directory:
+        directory: ${PROJECT_DIR:-.}

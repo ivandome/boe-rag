@@ -62,9 +62,16 @@ def fetch_index_xml_by_date(date_str: str) -> str:
 
 @task
 def extract_article_ids(index_xml: str) -> list[str]:
-    # Extract BOE-A-XXXX-YYYY using regex
-    ids = re.findall(r"BOE-A-\d{4}-\d{5}", index_xml)
-    return list(set(ids))  # avoid duplicates
+    """Return unique article IDs from the daily index XML."""
+
+    root = ET.fromstring(index_xml)
+    ids: set[str] = set()
+    for elem in root.iter():
+        id_attr = elem.attrib.get("id")
+        if id_attr and id_attr.startswith("BOE-A-"):
+            ids.add(id_attr)
+
+    return list(ids)
 
 
 @task

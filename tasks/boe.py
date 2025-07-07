@@ -2,6 +2,7 @@ from prefect import task
 import requests
 import re
 import xml.etree.ElementTree as ET
+from tasks.processing import clean_boe_text, split_into_paragraphs
 
 BOE_BASE = "https://www.boe.es"
 
@@ -103,23 +104,25 @@ def fetch_article_xml(boe_id: str) -> str:
 
 @task
 def parse_article_xml(xml_text: str) -> dict:
-    """Extract main fields and text from an article XML."""
+    """Extract main fields and processed segments from an article XML."""
     root = ET.fromstring(xml_text)
     title = root.findtext(".//titulo")
     department = root.findtext(".//departamento")
     rank = root.findtext(".//rango")
-    text = root.findtext(".//texto")
+    raw_text = root.findtext(".//texto") or ""
+    cleaned = clean_boe_text(raw_text)
+    segments = split_into_paragraphs(cleaned)
     return {
         "title": title,
         "department": department,
         "rank": rank,
-        "text": text,
+        "segments": segments,
     }
 
 
 @task
-def fetch_article_text(url_xml: str) -> tuple[dict, str]:
-    """Download an article XML and return metadata and text."""
+def fetch_article_text(url_xml: str) -> tuple[dict, list[str]]:
+    """Download an article XML and return metadata and cleaned segments."""
     r = requests.get(url_xml)
     r.raise_for_status()
     xml_text = r.text
@@ -129,4 +132,4 @@ def fetch_article_text(url_xml: str) -> tuple[dict, str]:
         "department": article_data.get("department"),
         "rank": article_data.get("rank"),
     }
-    return metadata, article_data.get("text")
+    return metadata, article_data.get("segments")

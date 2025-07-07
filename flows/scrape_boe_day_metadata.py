@@ -40,4 +40,4 @@ def scrape_boe_day_metadata(url_date_str: str = "2025/07/03"):
             "department": article_data.get("department"),
             "rank": article_data.get("rank"),
         }
-        insert_article(record, article_data.get("text"))
+        insert_article(record, "\n".join(article_data.get("segments", [])))

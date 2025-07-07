@@ -77,7 +77,11 @@ The system provides:
 
 * **Prefect:** The `prefect.yaml` file defines the Prefect project configuration and deployments.
   * The `work_pool` and `work_queue_name` may need to be adjusted to match your Prefect agent environment.
-  * The `pull` section currently contains an absolute directory path that should be changed for portability if using `set_working_directory` in deployments.
+* In the `pull` section, the `PROJECT_DIR` variable sets the working directory when building the deployment. If the variable is not defined, Prefect uses the current directory (`.`).
+  Before running `prefect deployment build`, export the variable with your desired path or edit the file to set it manually:
+  ```bash
+  export PROJECT_DIR="/path/to/your/project"
+  ```
 * **Flow Parameters:**
   * The `scrape_boe_day_metadata` flow in `main.py` has the date `2025-06-28` hardcoded for testing. For parameterized runs this date should be passed as an argument.
   * The `scrape_and_store` flow receives `url` and `filename` as parameters that can be specified when running or deploying the flow.

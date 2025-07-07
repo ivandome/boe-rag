@@ -1,6 +1,7 @@
 from prefect import task
 import requests
 import re
+import xml.etree.ElementTree as ET
 
 BOE_BASE = "https://www.boe.es"
 
@@ -88,4 +89,29 @@ def get_article_metadata(boe_id: str, date_str: str) -> dict:
         "date": date_str,  # Keep original date for metadata record
         "url_xml": url_xml,
         "url_pdf": url_pdf,
+    }
+
+
+@task
+def fetch_article_xml(boe_id: str) -> str:
+    """Download the XML for a specific article."""
+    url = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"
+    r = requests.get(url)
+    r.raise_for_status()
+    return r.text
+
+
+@task
+def parse_article_xml(xml_text: str) -> dict:
+    """Extract main fields and text from an article XML."""
+    root = ET.fromstring(xml_text)
+    title = root.findtext(".//titulo")
+    department = root.findtext(".//departamento")
+    rank = root.findtext(".//rango")
+    text = root.findtext(".//texto")
+    return {
+        "title": title,
+        "department": department,
+        "rank": rank,
+        "text": text,
     }

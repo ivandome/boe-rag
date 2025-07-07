@@ -3,3 +3,4 @@ requests
 beautifulsoup4
 pytest
 pytest-cov
+faiss-cpu

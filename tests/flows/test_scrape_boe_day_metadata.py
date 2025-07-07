@@ -41,8 +41,8 @@ def test_scrape_boe_day_metadata_flow(
     mock_article_exists.side_effect = [False, False]
     mock_fetch_article_xml.side_effect = ["<xml>1</xml>", "<xml>2</xml>"]
     mock_parse_article_xml.side_effect = [
-        {"title": "t1", "department": "d1", "rank": "r1", "text": "txt1"},
-        {"title": "t2", "department": "d2", "rank": "r2", "text": "txt2"},
+        {"title": "t1", "department": "d1", "rank": "r1", "segments": ["s1"]},
+        {"title": "t2", "department": "d2", "rank": "r2", "segments": ["s2"]},
     ]
 
     # Call the flow's function directly

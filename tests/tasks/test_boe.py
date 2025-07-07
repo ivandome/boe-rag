@@ -7,6 +7,7 @@ from tasks.boe import (
     get_article_metadata,
     fetch_article_text,
 )
+from tasks.processing import clean_boe_text, split_into_paragraphs
 import requests
 
 
@@ -165,7 +166,7 @@ def test_fetch_article_text_success(mock_get):
     mock_get.return_value = mock_response
 
     url = "http://example.com/test.xml"
-    metadata, text = fetch_article_text.fn(url)
+    metadata, segments = fetch_article_text.fn(url)
 
     mock_get.assert_called_once_with(url)
     mock_response.raise_for_status.assert_called_once()
@@ -174,7 +175,7 @@ def test_fetch_article_text_success(mock_get):
         "department": "Departamento X",
         "rank": "Orden",
     }
-    assert text == "Cuerpo del texto"
+    assert segments == ["Cuerpo del texto"]
 
 
 @patch("tasks.boe.requests.get")
@@ -190,3 +191,28 @@ def test_fetch_article_text_http_error(mock_get):
 
     mock_get.assert_called_once_with("http://example.com/test.xml")
     mock_response.raise_for_status.assert_called_once()
+
+
+def test_clean_boe_text():
+    raw = "  Hola\nMundo\t"
+    assert clean_boe_text(raw) == "Hola\nMundo"
+
+
+def test_split_into_paragraphs():
+    text = "Uno\n\nDos\nTres\n"
+    assert split_into_paragraphs(text) == ["Uno", "Dos", "Tres"]
+
+
+def test_parse_article_xml_segments():
+    xml = """
+    <documento>
+        <titulo>Titulo</titulo>
+        <departamento>Depto</departamento>
+        <rango>Orden</rango>
+        <texto>Linea 1\n\nLinea 2</texto>
+    </documento>
+    """
+    from tasks.boe import parse_article_xml
+
+    result = parse_article_xml.fn(xml)
+    assert result["segments"] == ["Linea 1", "Linea 2"]

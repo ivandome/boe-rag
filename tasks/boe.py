@@ -66,10 +66,16 @@ def extract_article_ids(index_xml: str) -> list[str]:
 
     root = ET.fromstring(index_xml)
     ids: set[str] = set()
+    pattern = re.compile(r"BOE-[A-Z]-\d{4}-\d{5}")
+
     for elem in root.iter():
-        id_attr = elem.attrib.get("id")
-        if id_attr and id_attr.startswith("BOE-A-"):
-            ids.add(id_attr)
+        # Look for IDs in any attribute value
+        for value in elem.attrib.values():
+            ids.update(pattern.findall(value))
+
+        # Also check element text content
+        if elem.text:
+            ids.update(pattern.findall(elem.text))
 
     return list(ids)
 

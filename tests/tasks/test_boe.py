@@ -92,28 +92,34 @@ def test_extract_article_ids(capsys):
     sample_xml_content = """
     <document>
         <item id="BOE-A-2023-12345"/>
-        <item id="BOE-S-2023-00123"/>
-        <item id="BOE-A-2023-67890"/>
+        <item id="BOE-E-2023-00123"/>
+        <item attr="BOE-C-2023-67890"/>
         <other attr="BOE-A-2024-11111"/>
         <item id="BOE-A-2023-12345"/>
         <text>BOE-A-9999-99999</text>
     </document>
     """
-    expected_ids = ["BOE-A-2023-12345", "BOE-A-2023-67890"]
+    expected_ids = [
+        "BOE-A-2023-12345",
+        "BOE-E-2023-00123",
+        "BOE-C-2023-67890",
+        "BOE-A-2024-11111",
+        "BOE-A-9999-99999",
+    ]
     result = extract_article_ids.fn(sample_xml_content)
     print(f"Resultado de extract_article_ids: {result}")
     # Sorting because set does not guarantee order
     assert sorted(result) == sorted(expected_ids)
     captured = capsys.readouterr()
     assert "BOE-A-2023-12345" in captured.out
-    assert "BOE-A-2023-67890" in captured.out
+    assert "BOE-C-2023-67890" in captured.out
 
 
 def test_extract_article_ids_no_matches(capsys):
     sample_xml_content = """
     <document>
-        <text>BOE-A-2025-00001</text>
-        <other attr='BOE-A-2025-00002'/>
+        <text>OTHER-2025-00001</text>
+        <other attr='OTHER-2025-00002'/>
     </document>
     """
     result = extract_article_ids.fn(sample_xml_content)

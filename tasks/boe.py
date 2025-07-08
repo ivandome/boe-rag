@@ -31,17 +31,13 @@ def _build_sumario_url(year: str, month: str, day: str) -> str:
         f"{BOE_BASE}/datosabiertos/api/boe/sumario/"
         f"{year}{month.zfill(2)}{day.zfill(2)}"
     )
-    print(
-        f"_build_sumario_url -> year:{year} month:{month} day:{day} url:{url}"
-    )
+    print(f"_build_sumario_url -> year:{year} month:{month} day:{day} url:{url}")
     return url
 
 
 @task
 def fetch_boes_from_data(year: str, month: str, day: str) -> str:
-    print(
-        f"fetch_boes_from_data -> params: year={year} month={month} day={day}"
-    )
+    print(f"fetch_boes_from_data -> params: year={year} month={month} day={day}")
     month_padded = month.zfill(2)
     day_padded = day.zfill(2)
     url = f"https://www.boe.es/boe/dias/{year}/{month_padded}/{day_padded}/"
@@ -55,9 +51,7 @@ def fetch_boes_from_data(year: str, month: str, day: str) -> str:
 @task(retries=2, retry_delay_seconds=5)
 def fetch_index_xml(year: str, month: str, day: str) -> str:
     """Get the daily XML index given year, month and day."""
-    print(
-        f"fetch_index_xml -> params: year={year} month={month} day={day}"
-    )
+    print(f"fetch_index_xml -> params: year={year} month={month} day={day}")
     url = _build_sumario_url(year, month, day)
     print(f"fetch_index_xml -> url: {url}")
     r = session.get(url, headers={"Accept": "application/xml"}, timeout=10)
@@ -117,9 +111,7 @@ def get_article_metadata(boe_id: str, date_str: str) -> dict:
             f"Date format is incorrect in get_article_metadata: {date_str}. Expected YYYY-MM-DD."
         )
 
-    print(
-        f"get_article_metadata -> boe_id:{boe_id} date_str:{date_str}"
-    )
+    print(f"get_article_metadata -> boe_id:{boe_id} date_str:{date_str}")
     url_xml = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"
     url_pdf = f"https://www.boe.es/boe/dias/{year}/{month.zfill(2)}/{day.zfill(2)}/pdfs/{boe_id}.pdf"
     metadata = {
@@ -144,6 +136,35 @@ def fetch_article_xml(boe_id: str) -> str:
     return r.text
 
 
+def _parse_additional_fields(root: ET.Element) -> dict:
+    """Extract metadata and analysis sections from an article XML tree."""
+    data: dict = {}
+    meta = root.find(".//metadatos")
+    if meta is not None:
+        data["identificador"] = meta.findtext("identificador")
+        data["fecha_disposicion"] = meta.findtext("fecha_disposicion")
+        data["diario"] = meta.findtext("diario")
+        data["fecha_publicacion"] = meta.findtext("fecha_publicacion")
+        data["pagina_inicial"] = meta.findtext("pagina_inicial")
+        data["pagina_final"] = meta.findtext("pagina_final")
+
+    analysis = root.find(".//analisis")
+    if analysis is not None:
+        materias = [m.text for m in analysis.findall(".//materias/materia") if m.text]
+        notas = [n.text for n in analysis.findall(".//notas/nota") if n.text]
+        referencias = [
+            r.text for r in analysis.findall(".//referencias/referencia") if r.text
+        ]
+        alertas = [a.text for a in analysis.findall(".//alertas/alerta") if a.text]
+
+        data["materias"] = materias
+        data["notas"] = notas
+        data["referencias"] = referencias
+        data["alertas"] = alertas
+
+    return data
+
+
 @task
 def parse_article_xml(xml_text: str) -> dict:
     """Extract main fields and processed segments from an article XML."""
@@ -160,6 +181,7 @@ def parse_article_xml(xml_text: str) -> dict:
         "rank": rank,
         "segments": segments,
     }
+    data.update(_parse_additional_fields(root))
     print(
         f"parse_article_xml -> title:{title} department:{department} rank:{rank} segments:{len(segments)}"
     )

@@ -12,6 +12,7 @@ The system provides:
    * Downloads the daily XML index for a given date.
    * Extracts all published article identifiers (e.g. `BOE-A-YYYY-NNNNN`).
    * For each article, gathers key metadata including direct URLs to the XML and PDF versions.
+   * It also collects fields from `<metadatos>` such as `identificador`, `fecha_disposicion`, `diario`, `fecha_publicacion`, `pagina_inicial` y `pagina_final`, así como las materias, notas, referencias y alertas presentes en `<analisis>`.
    * Stores this metadata in a structured JSONL file (`data/boe_metadata.jsonl`).
 
 2. **Article Text Extraction**

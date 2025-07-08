@@ -138,15 +138,27 @@ def fetch_article_xml(boe_id: str) -> str:
 
 def _parse_additional_fields(root: ET.Element) -> dict:
     """Extract metadata and analysis sections from an article XML tree."""
-    data: dict = {}
+    data: dict = {
+        "identificador": "",
+        "fecha_disposicion": "",
+        "diario": "",
+        "fecha_publicacion": "",
+        "pagina_inicial": "",
+        "pagina_final": "",
+        "materias": [],
+        "notas": [],
+        "referencias": [],
+        "alertas": [],
+    }
+
     meta = root.find(".//metadatos")
     if meta is not None:
-        data["identificador"] = meta.findtext("identificador")
-        data["fecha_disposicion"] = meta.findtext("fecha_disposicion")
-        data["diario"] = meta.findtext("diario")
-        data["fecha_publicacion"] = meta.findtext("fecha_publicacion")
-        data["pagina_inicial"] = meta.findtext("pagina_inicial")
-        data["pagina_final"] = meta.findtext("pagina_final")
+        data["identificador"] = meta.findtext("identificador") or ""
+        data["fecha_disposicion"] = meta.findtext("fecha_disposicion") or ""
+        data["diario"] = meta.findtext("diario") or ""
+        data["fecha_publicacion"] = meta.findtext("fecha_publicacion") or ""
+        data["pagina_inicial"] = meta.findtext("pagina_inicial") or ""
+        data["pagina_final"] = meta.findtext("pagina_final") or ""
 
     analysis = root.find(".//analisis")
     if analysis is not None:

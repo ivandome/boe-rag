@@ -299,3 +299,49 @@ def test_parse_article_xml_additional_fields():
     assert result["notas"] == ["Nota A"]
     assert result["referencias"] == ["Ref 1"]
     assert result["alertas"] == ["Alerta 1"]
+
+
+def test_parse_article_xml_without_metadatos():
+    xml = """
+    <documento>
+        <titulo>Titulo</titulo>
+        <departamento>Depto</departamento>
+        <rango>Orden</rango>
+        <texto>Texto</texto>
+        <analisis>
+            <materias>
+                <materia>Economía</materia>
+            </materias>
+        </analisis>
+    </documento>
+    """
+    from tasks.boe import parse_article_xml
+
+    result = parse_article_xml.fn(xml)
+    assert result["identificador"] == ""
+    assert result["materias"] == ["Economía"]
+    assert result["notas"] == []
+    assert result["referencias"] == []
+    assert result["alertas"] == []
+
+
+def test_parse_article_xml_without_analisis():
+    xml = """
+    <documento>
+        <titulo>Titulo</titulo>
+        <departamento>Depto</departamento>
+        <rango>Orden</rango>
+        <texto>Texto</texto>
+        <metadatos>
+            <identificador>BOE-A-2023-12345</identificador>
+        </metadatos>
+    </documento>
+    """
+    from tasks.boe import parse_article_xml
+
+    result = parse_article_xml.fn(xml)
+    assert result["identificador"] == "BOE-A-2023-12345"
+    assert result["materias"] == []
+    assert result["notas"] == []
+    assert result["referencias"] == []
+    assert result["alertas"] == []

@@ -11,7 +11,7 @@ from tasks.processing import clean_boe_text, split_into_paragraphs
 import requests
 
 
-@patch("tasks.boe.requests.get")
+@patch("tasks.boe.session.get")
 def test_fetch_index_xml_success(mock_get):
     mock_response = MagicMock()
     mock_response.text = "<xml>test data</xml>"
@@ -25,12 +25,13 @@ def test_fetch_index_xml_success(mock_get):
     mock_get.assert_called_once_with(
         f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}",
         headers={"Accept": "application/xml"},
+        timeout=10,
     )
     mock_response.raise_for_status.assert_called_once()
     assert result == "<xml>test data</xml>"
 
 
-@patch("tasks.boe.requests.get")
+@patch("tasks.boe.session.get")
 def test_fetch_index_xml_success_with_capture(mock_get, capsys):
     mock_response = MagicMock()
     mock_response.text = "<xml>test data</xml>"
@@ -47,12 +48,13 @@ def test_fetch_index_xml_success_with_capture(mock_get, capsys):
     mock_get.assert_called_once_with(
         f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}",
         headers={"Accept": "application/xml"},
+        timeout=10,
     )
     mock_response.raise_for_status.assert_called_once()
     assert result == "<xml>test data</xml>"
 
 
-@patch("tasks.boe.requests.get")
+@patch("tasks.boe.session.get")
 def test_fetch_index_xml_http_error(mock_get):
     mock_response = MagicMock()
     mock_response.headers = {"Content-Type": "application/xml"}
@@ -70,11 +72,12 @@ def test_fetch_index_xml_http_error(mock_get):
     mock_get.assert_called_once_with(
         f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}",
         headers={"Accept": "application/xml"},
+        timeout=10,
     )
     mock_response.raise_for_status.assert_called_once()
 
 
-@patch("tasks.boe.requests.get")
+@patch("tasks.boe.session.get")
 def test_fetch_index_xml_invalid_content_type(mock_get):
     mock_response = MagicMock()
     mock_response.text = "<html>Not XML</html>"
@@ -163,7 +166,7 @@ def test_fetch_index_xml_by_date_invalid():
         fetch_index_xml_by_date.fn("202506")
 
 
-@patch("tasks.boe.requests.get")
+@patch("tasks.boe.session.get")
 def test_fetch_article_text_success(mock_get):
     sample_xml = """
     <documento>
@@ -181,7 +184,7 @@ def test_fetch_article_text_success(mock_get):
     url = "http://example.com/test.xml"
     metadata, segments = fetch_article_text.fn(url)
 
-    mock_get.assert_called_once_with(url)
+    mock_get.assert_called_once_with(url, timeout=10)
     mock_response.raise_for_status.assert_called_once()
     assert metadata == {
         "title": "Titulo de prueba",
@@ -191,7 +194,7 @@ def test_fetch_article_text_success(mock_get):
     assert segments == ["Cuerpo del texto"]
 
 
-@patch("tasks.boe.requests.get")
+@patch("tasks.boe.session.get")
 def test_fetch_article_text_http_error(mock_get):
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock(
@@ -202,7 +205,7 @@ def test_fetch_article_text_http_error(mock_get):
     with pytest.raises(requests.exceptions.HTTPError, match="Network Error"):
         fetch_article_text.fn("http://example.com/test.xml")
 
-    mock_get.assert_called_once_with("http://example.com/test.xml")
+    mock_get.assert_called_once_with("http://example.com/test.xml", timeout=10)
     mock_response.raise_for_status.assert_called_once()
 
 

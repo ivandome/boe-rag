@@ -1,5 +1,5 @@
 from prefect import task
-import requests
+from tasks import session
 import re
 import xml.etree.ElementTree as ET
 from tasks.processing import clean_boe_text, split_into_paragraphs
@@ -46,7 +46,7 @@ def fetch_boes_from_data(year: str, month: str, day: str) -> str:
     day_padded = day.zfill(2)
     url = f"https://www.boe.es/boe/dias/{year}/{month_padded}/{day_padded}/"
     print(f"fetch_boes_from_data -> url: {url}")
-    r = requests.get(url)
+    r = session.get(url, timeout=10)
     r.raise_for_status()
     print("fetch_boes_from_data -> response size:", len(r.text))
     return r.text
@@ -60,7 +60,7 @@ def fetch_index_xml(year: str, month: str, day: str) -> str:
     )
     url = _build_sumario_url(year, month, day)
     print(f"fetch_index_xml -> url: {url}")
-    r = requests.get(url, headers={"Accept": "application/xml"})
+    r = session.get(url, headers={"Accept": "application/xml"}, timeout=10)
     r.raise_for_status()
     if "xml" not in r.headers.get("Content-Type", ""):
         raise ValueError("Response is not XML")
@@ -135,7 +135,7 @@ def fetch_article_xml(boe_id: str) -> str:
     print(f"fetch_article_xml -> boe_id: {boe_id}")
     url = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"
     print(f"fetch_article_xml -> url: {url}")
-    r = requests.get(url)
+    r = session.get(url, timeout=10)
     r.raise_for_status()
     print("fetch_article_xml -> response size:", len(r.text))
     return r.text
@@ -167,7 +167,7 @@ def parse_article_xml(xml_text: str) -> dict:
 def fetch_article_text(url_xml: str) -> tuple[dict, list[str]]:
     """Download an article XML and return metadata and cleaned segments."""
     print(f"fetch_article_text -> url: {url_xml}")
-    r = requests.get(url_xml)
+    r = session.get(url_xml, timeout=10)
     r.raise_for_status()
     xml_text = r.text
     print("fetch_article_text -> downloaded", len(xml_text), "chars")

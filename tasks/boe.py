@@ -52,7 +52,7 @@ def fetch_boes_from_data(year: str, month: str, day: str) -> str:
     return r.text
 
 
-@task
+@task(retries=2, retry_delay_seconds=5)
 def fetch_index_xml(year: str, month: str, day: str) -> str:
     """Get the daily XML index given year, month and day."""
     print(
@@ -61,6 +61,9 @@ def fetch_index_xml(year: str, month: str, day: str) -> str:
     url = _build_sumario_url(year, month, day)
     print(f"fetch_index_xml -> url: {url}")
     r = session.get(url, headers={"Accept": "application/xml"}, timeout=10)
+    if r.status_code == 404:
+        print("fetch_index_xml -> index not found (404)")
+        return ""
     r.raise_for_status()
     if "xml" not in r.headers.get("Content-Type", ""):
         raise ValueError("Response is not XML")
@@ -129,7 +132,7 @@ def get_article_metadata(boe_id: str, date_str: str) -> dict:
     return metadata
 
 
-@task
+@task(retries=2, retry_delay_seconds=5)
 def fetch_article_xml(boe_id: str) -> str:
     """Download the XML for a specific article."""
     print(f"fetch_article_xml -> boe_id: {boe_id}")

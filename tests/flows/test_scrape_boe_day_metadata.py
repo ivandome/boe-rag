@@ -120,3 +120,34 @@ def test_scrape_boe_day_metadata_flow_no_ids(
     mock_fetch_article_xml.assert_not_called()
     mock_parse_article_xml.assert_not_called()
     mock_insert_article.assert_not_called()
+
+
+@patch("flows.scrape_boe_day_metadata.init_db")
+@patch("flows.scrape_boe_day_metadata.insert_article")
+@patch("flows.scrape_boe_day_metadata.parse_article_xml")
+@patch("flows.scrape_boe_day_metadata.fetch_article_xml")
+@patch("flows.scrape_boe_day_metadata.article_exists")
+@patch("flows.scrape_boe_day_metadata.get_article_metadata")
+@patch("flows.scrape_boe_day_metadata.extract_article_ids")
+@patch("flows.scrape_boe_day_metadata.fetch_index_xml")
+def test_scrape_boe_day_metadata_flow_no_index(
+    mock_fetch_index_xml,
+    mock_extract_article_ids,
+    mock_get_article_metadata,
+    mock_article_exists,
+    mock_fetch_article_xml,
+    mock_parse_article_xml,
+    mock_insert_article,
+    mock_init_db,
+):
+    mock_fetch_index_xml.return_value = ""
+
+    scrape_boe_day_metadata.fn(url_date_str="2023/01/03")
+
+    mock_fetch_index_xml.assert_called_once()
+    mock_extract_article_ids.assert_not_called()
+    mock_get_article_metadata.assert_not_called()
+    mock_article_exists.assert_not_called()
+    mock_fetch_article_xml.assert_not_called()
+    mock_parse_article_xml.assert_not_called()
+    mock_insert_article.assert_not_called()

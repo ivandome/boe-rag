@@ -24,6 +24,9 @@ def scrape_boe_day_metadata(url_date_str: str = "2025/07/03"):
     init_db()
 
     index_boes = fetch_index_xml(year, month, day)
+    if not index_boes:
+        print("No existe \u00edndice para la fecha indicada.")
+        return
     boe_ids = extract_article_ids(index_boes)
     print(f"Art\u00edculos encontrados: {len(boe_ids)}")
 

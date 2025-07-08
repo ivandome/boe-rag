@@ -96,6 +96,10 @@ There are two main ways to run the flows:
    ```bash
    python main.py
    ```
+   To use a custom date:
+   ```bash
+   python main.py --date 2024/12/31
+   ```
    You can modify `main.py` to run other flows or change parameters.
 
    **Note about `PREFECT_API_URL`:**

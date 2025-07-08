@@ -252,3 +252,50 @@ def test_parse_article_xml_segments():
 
     result = parse_article_xml.fn(xml)
     assert result["segments"] == ["Linea 1", "Linea 2"]
+
+
+def test_parse_article_xml_additional_fields():
+    xml = """
+    <documento>
+        <titulo>Titulo</titulo>
+        <departamento>Depto</departamento>
+        <rango>Orden</rango>
+        <texto>Texto</texto>
+        <metadatos>
+            <identificador>BOE-A-2023-12345</identificador>
+            <fecha_disposicion>2023-06-01</fecha_disposicion>
+            <diario>BOE</diario>
+            <fecha_publicacion>2023-06-05</fecha_publicacion>
+            <pagina_inicial>10</pagina_inicial>
+            <pagina_final>15</pagina_final>
+        </metadatos>
+        <analisis>
+            <materias>
+                <materia>Economía</materia>
+                <materia>Salud</materia>
+            </materias>
+            <notas>
+                <nota>Nota A</nota>
+            </notas>
+            <referencias>
+                <referencia>Ref 1</referencia>
+            </referencias>
+            <alertas>
+                <alerta>Alerta 1</alerta>
+            </alertas>
+        </analisis>
+    </documento>
+    """
+    from tasks.boe import parse_article_xml
+
+    result = parse_article_xml.fn(xml)
+    assert result["identificador"] == "BOE-A-2023-12345"
+    assert result["fecha_disposicion"] == "2023-06-01"
+    assert result["diario"] == "BOE"
+    assert result["fecha_publicacion"] == "2023-06-05"
+    assert result["pagina_inicial"] == "10"
+    assert result["pagina_final"] == "15"
+    assert result["materias"] == ["Economía", "Salud"]
+    assert result["notas"] == ["Nota A"]
+    assert result["referencias"] == ["Ref 1"]
+    assert result["alertas"] == ["Alerta 1"]

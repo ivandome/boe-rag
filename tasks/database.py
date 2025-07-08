@@ -39,6 +39,8 @@ def init_db(db_path: str = "data/boe.db"):
     )
     conn.commit()
     conn.close()
+    print(f"Ruta de base de datos utilizada: {path}")
+    print("Base de datos inicializada.")
 
 
 @task
@@ -74,6 +76,8 @@ def insert_article(record: dict, text: str, db_path: str = "data/boe.db"):
     )
     conn.commit()
     conn.close()
+    print(f"Ruta de base de datos utilizada: {db_path}")
+    print("Artículo insertado correctamente.")
 
 
 @task

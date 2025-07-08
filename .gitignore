@@ -9,3 +9,6 @@ __pycache__/
 # Ignorar todos los archivos .pyc y .pyo por si acaso
 *.py[cod]
 venv/
+
+# Ignorar carpeta de datos
+data/

@@ -78,6 +78,26 @@ def test_fetch_index_xml_http_error(mock_get):
 
 
 @patch("tasks.boe.session.get")
+def test_fetch_index_xml_not_found(mock_get):
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_response.text = ""
+    mock_response.headers = {"Content-Type": "application/xml"}
+    mock_response.raise_for_status = MagicMock()
+    mock_get.return_value = mock_response
+
+    result = fetch_index_xml.fn("2023", "01", "02")
+
+    mock_get.assert_called_once_with(
+        "https://www.boe.es/datosabiertos/api/boe/sumario/20230102",
+        headers={"Accept": "application/xml"},
+        timeout=10,
+    )
+    mock_response.raise_for_status.assert_not_called()
+    assert result == ""
+
+
+@patch("tasks.boe.session.get")
 def test_fetch_index_xml_invalid_content_type(mock_get):
     mock_response = MagicMock()
     mock_response.text = "<html>Not XML</html>"

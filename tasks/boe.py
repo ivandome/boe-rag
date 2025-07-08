@@ -3,6 +3,9 @@ from tasks import session
 import re
 import xml.etree.ElementTree as ET
 from tasks.processing import clean_boe_text, split_into_paragraphs
+import logging
+
+logger = logging.getLogger(__name__)
 
 BOE_BASE = "https://www.boe.es"
 
@@ -14,13 +17,13 @@ def _parse_date_to_ymd(date_str: str) -> tuple[str, str, str]:
     removed and exactly eight digits are required.
     """
 
-    print(f"_parse_date_to_ymd -> date_str: {date_str}")
+    logger.debug("_parse_date_to_ymd -> date_str: %s", date_str)
     digits = re.sub(r"\D", "", date_str)
     if len(digits) != 8:
         raise ValueError("The date must contain year, month and day (YYYYMMDD).")
 
     year, month, day = digits[:4], digits[4:6], digits[6:8]
-    print(f"_parse_date_to_ymd -> parsed: {year}-{month}-{day}")
+    logger.debug("_parse_date_to_ymd -> parsed: %s-%s-%s", year, month, day)
     return year, month, day
 
 
@@ -31,44 +34,60 @@ def _build_sumario_url(year: str, month: str, day: str) -> str:
         f"{BOE_BASE}/datosabiertos/api/boe/sumario/"
         f"{year}{month.zfill(2)}{day.zfill(2)}"
     )
-    print(f"_build_sumario_url -> year:{year} month:{month} day:{day} url:{url}")
+    logger.debug(
+        "_build_sumario_url -> year:%s month:%s day:%s url:%s",
+        year,
+        month,
+        day,
+        url,
+    )
     return url
 
 
 @task
 def fetch_boes_from_data(year: str, month: str, day: str) -> str:
-    print(f"fetch_boes_from_data -> params: year={year} month={month} day={day}")
+    logger.info(
+        "fetch_boes_from_data -> params: year=%s month=%s day=%s",
+        year,
+        month,
+        day,
+    )
     month_padded = month.zfill(2)
     day_padded = day.zfill(2)
     url = f"https://www.boe.es/boe/dias/{year}/{month_padded}/{day_padded}/"
-    print(f"fetch_boes_from_data -> url: {url}")
+    logger.debug("fetch_boes_from_data -> url: %s", url)
     r = session.get(url, timeout=10)
     r.raise_for_status()
-    print("fetch_boes_from_data -> response size:", len(r.text))
+    logger.debug("fetch_boes_from_data -> response size: %s", len(r.text))
     return r.text
 
 
 @task(retries=2, retry_delay_seconds=5)
 def fetch_index_xml(year: str, month: str, day: str) -> str:
     """Get the daily XML index given year, month and day."""
-    print(f"fetch_index_xml -> params: year={year} month={month} day={day}")
+    logger.info(
+        "fetch_index_xml -> params: year=%s month=%s day=%s",
+        year,
+        month,
+        day,
+    )
     url = _build_sumario_url(year, month, day)
-    print(f"fetch_index_xml -> url: {url}")
+    logger.debug("fetch_index_xml -> url: %s", url)
     r = session.get(url, headers={"Accept": "application/xml"}, timeout=10)
     if r.status_code == 404:
-        print("fetch_index_xml -> index not found (404)")
+        logger.warning("fetch_index_xml -> index not found (404)")
         return ""
     r.raise_for_status()
     if "xml" not in r.headers.get("Content-Type", ""):
         raise ValueError("Response is not XML")
-    print("fetch_index_xml -> response size:", len(r.text))
+    logger.debug("fetch_index_xml -> response size: %s", len(r.text))
     return r.text
 
 
 @task
 def fetch_index_xml_by_date(date_str: str) -> str:
     """Download the XML index for a given date."""
-    print(f"fetch_index_xml_by_date -> date_str: {date_str}")
+    logger.info("fetch_index_xml_by_date -> date_str: %s", date_str)
     year, month, day = _parse_date_to_ymd(date_str)
     return fetch_index_xml.fn(year, month, day)
 
@@ -91,7 +110,7 @@ def extract_article_ids(index_xml: str) -> list[str]:
             ids.update(pattern.findall(elem.text))
 
     id_list = list(ids)
-    print(f"extract_article_ids -> found {len(id_list)} ids")
+    logger.info("extract_article_ids -> found %s ids", len(id_list))
     return id_list
 
 
@@ -111,7 +130,11 @@ def get_article_metadata(boe_id: str, date_str: str) -> dict:
             f"Date format is incorrect in get_article_metadata: {date_str}. Expected YYYY-MM-DD."
         )
 
-    print(f"get_article_metadata -> boe_id:{boe_id} date_str:{date_str}")
+    logger.info(
+        "get_article_metadata -> boe_id:%s date_str:%s",
+        boe_id,
+        date_str,
+    )
     url_xml = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"
     url_pdf = f"https://www.boe.es/boe/dias/{year}/{month.zfill(2)}/{day.zfill(2)}/pdfs/{boe_id}.pdf"
     metadata = {
@@ -120,19 +143,19 @@ def get_article_metadata(boe_id: str, date_str: str) -> dict:
         "url_xml": url_xml,
         "url_pdf": url_pdf,
     }
-    print(f"get_article_metadata -> metadata: {metadata}")
+    logger.debug("get_article_metadata -> metadata: %s", metadata)
     return metadata
 
 
 @task(retries=2, retry_delay_seconds=5)
 def fetch_article_xml(boe_id: str) -> str:
     """Download the XML for a specific article."""
-    print(f"fetch_article_xml -> boe_id: {boe_id}")
+    logger.info("fetch_article_xml -> boe_id: %s", boe_id)
     url = f"https://www.boe.es/diario_boe/xml.php?id={boe_id}"
-    print(f"fetch_article_xml -> url: {url}")
+    logger.debug("fetch_article_xml -> url: %s", url)
     r = session.get(url, timeout=10)
     r.raise_for_status()
-    print("fetch_article_xml -> response size:", len(r.text))
+    logger.debug("fetch_article_xml -> response size: %s", len(r.text))
     return r.text
 
 
@@ -194,8 +217,12 @@ def parse_article_xml(xml_text: str) -> dict:
         "segments": segments,
     }
     data.update(_parse_additional_fields(root))
-    print(
-        f"parse_article_xml -> title:{title} department:{department} rank:{rank} segments:{len(segments)}"
+    logger.info(
+        "parse_article_xml -> title:%s department:%s rank:%s segments:%s",
+        title,
+        department,
+        rank,
+        len(segments),
     )
     return data
 
@@ -203,16 +230,16 @@ def parse_article_xml(xml_text: str) -> dict:
 @task
 def fetch_article_text(url_xml: str) -> tuple[dict, list[str]]:
     """Download an article XML and return metadata and cleaned segments."""
-    print(f"fetch_article_text -> url: {url_xml}")
+    logger.info("fetch_article_text -> url: %s", url_xml)
     r = session.get(url_xml, timeout=10)
     r.raise_for_status()
     xml_text = r.text
-    print("fetch_article_text -> downloaded", len(xml_text), "chars")
+    logger.debug("fetch_article_text -> downloaded %s chars", len(xml_text))
     article_data = parse_article_xml.fn(xml_text)
     metadata = {
         "title": article_data.get("title"),
         "department": article_data.get("department"),
         "rank": article_data.get("rank"),
     }
-    print(f"fetch_article_text -> metadata: {metadata}")
+    logger.debug("fetch_article_text -> metadata: %s", metadata)
     return metadata, article_data.get("segments")

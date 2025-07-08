@@ -9,6 +9,7 @@ from tasks.boe import (
 )
 from tasks.processing import clean_boe_text, split_into_paragraphs
 import requests
+import logging
 
 
 @patch("tasks.boe.session.get")
@@ -32,7 +33,7 @@ def test_fetch_index_xml_success(mock_get):
 
 
 @patch("tasks.boe.session.get")
-def test_fetch_index_xml_success_with_capture(mock_get, capsys):
+def test_fetch_index_xml_success_with_capture(mock_get, caplog):
     mock_response = MagicMock()
     mock_response.text = "<xml>test data</xml>"
     mock_response.headers = {"Content-Type": "text/xml"}
@@ -40,11 +41,12 @@ def test_fetch_index_xml_success_with_capture(mock_get, capsys):
     mock_get.return_value = mock_response
 
     year, month, day = "2023", "01", "01"
-    result = fetch_index_xml.fn(year, month, day)
-    print(f"Resultado de fetch_index_xml: {result}")
+    with caplog.at_level(logging.INFO):
+        result = fetch_index_xml.fn(year, month, day)
 
-    captured = capsys.readouterr()
-    assert "<xml>test data</xml>" in captured.out
+    assert (
+        f"fetch_index_xml -> params: year={year} month={month} day={day}" in caplog.text
+    )
     mock_get.assert_called_once_with(
         f"https://www.boe.es/datosabiertos/api/boe/sumario/{year}{month}{day}",
         headers={"Accept": "application/xml"},
@@ -111,7 +113,7 @@ def test_fetch_index_xml_invalid_content_type(mock_get):
     mock_get.assert_called_once()
 
 
-def test_extract_article_ids(capsys):
+def test_extract_article_ids(caplog):
     sample_xml_content = """
     <document>
         <item id="BOE-A-2023-12345"/>
@@ -129,30 +131,27 @@ def test_extract_article_ids(capsys):
         "BOE-A-2024-11111",
         "BOE-A-9999-99999",
     ]
-    result = extract_article_ids.fn(sample_xml_content)
-    print(f"Resultado de extract_article_ids: {result}")
+    with caplog.at_level(logging.INFO):
+        result = extract_article_ids.fn(sample_xml_content)
     # Sorting because set does not guarantee order
     assert sorted(result) == sorted(expected_ids)
-    captured = capsys.readouterr()
-    assert "BOE-A-2023-12345" in captured.out
-    assert "BOE-C-2023-67890" in captured.out
+    assert "extract_article_ids -> found" in caplog.text
 
 
-def test_extract_article_ids_no_matches(capsys):
+def test_extract_article_ids_no_matches(caplog):
     sample_xml_content = """
     <document>
         <text>OTHER-2025-00001</text>
         <other attr='OTHER-2025-00002'/>
     </document>
     """
-    result = extract_article_ids.fn(sample_xml_content)
-    print(f"Resultado de extract_article_ids_no_matches: {result}")
+    with caplog.at_level(logging.INFO):
+        result = extract_article_ids.fn(sample_xml_content)
     assert result == []
-    captured = capsys.readouterr()
-    assert "[]" in captured.out
+    assert "extract_article_ids -> found" in caplog.text
 
 
-def test_get_article_metadata(capsys):
+def test_get_article_metadata(caplog):
     boe_id = "BOE-A-2023-12345"
     date_str = "2023-01-01"  # YYYY-MM-DD
     year, month, day = date_str.split("-")
@@ -162,12 +161,11 @@ def test_get_article_metadata(capsys):
         "url_xml": f"https://www.boe.es/diario_boe/xml.php?id={boe_id}",
         "url_pdf": f"https://www.boe.es/boe/dias/{year}/{month}/{day}/pdfs/{boe_id}.pdf",  # Uses parsed components
     }
-    result = get_article_metadata.fn(boe_id, date_str)
-    print(f"Resultado de get_article_metadata: {result}")
+    with caplog.at_level(logging.INFO):
+        result = get_article_metadata.fn(boe_id, date_str)
     assert result == expected_metadata
-    captured = capsys.readouterr()
-    assert boe_id in captured.out
-    assert date_str in captured.out
+    assert boe_id in caplog.text
+    assert date_str in caplog.text
 
 
 @patch("tasks.boe.fetch_index_xml.fn")

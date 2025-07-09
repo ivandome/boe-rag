@@ -23,6 +23,13 @@ The system provides:
    * Uses Prefect flows and tasks to manage extraction and storage.
    * Includes a Prefect deployment configuration (`prefect.yaml`).
 
+4. **Article Indexing**
+   * The `index_articles` flow computes sentence embeddings for stored articles.
+   * Embeddings are saved in a FAISS index for later retrieval.
+
+5. **Resilient Networking**
+   * A shared HTTP session applies retries to handle transient errors.
+
 ## Technologies Used
 
 * **Python 3.x**
@@ -30,6 +37,7 @@ The system provides:
 * **Requests** for HTTP requests to BOE services
 * **Beautiful Soup 4** for HTML/XML parsing (mainly XML)
 * **Standard Python libraries**: `re`, `json`, `pathlib`
+* **FAISS** and **Sentence Transformers** for vector indexing
 
 ## Project Structure
 
@@ -42,14 +50,18 @@ The system provides:
 ├── flows/
 │   ├── __init__.py
 │   ├── scrape_and_store.py       # Prefect flow to download and store content from a URL
-│   └── scrape_boe_day_metadata.py # Prefect flow to get a day's metadata
+│   ├── scrape_boe_day_metadata.py # Prefect flow to get a day's metadata
+│   └── index_articles.py         # Prefect flow to build the FAISS index
 ├── main.py                 # Entry point for local flow runs
 ├── prefect.yaml            # Project and deployment configuration
 ├── tasks/
 │   ├── __init__.py
 │   ├── boe.py              # Tasks that interact with the BOE
 │   ├── scraping.py         # Generic scraping tasks
-│   └── storage.py          # Data storage tasks
+│   ├── storage.py          # Data storage tasks
+│   ├── database.py         # SQLite helpers
+│   ├── processing.py       # Text cleaning utilities
+│   └── indexing.py         # Embedding and FAISS indexing
 └── README.md               # This file
 ```
 
@@ -84,7 +96,7 @@ The system provides:
   export PROJECT_DIR="/path/to/your/project"
   ```
 * **Flow Parameters:**
-  * The `scrape_boe_day_metadata` flow in `main.py` has the date `2025-06-28` hardcoded for testing. For parameterized runs this date should be passed as an argument.
+* The `scrape_boe_day_metadata` flow in `main.py` uses the date `2025/06/28` by default. Override it with `--date` when running the script.
   * The `scrape_and_store` flow receives `url` and `filename` as parameters that can be specified when running or deploying the flow.
   * The metadata file name (`data/boe_metadata.jsonl`) is currently hardcoded in the task `tasks.storage.append_metadata`. It could be turned into a configurable parameter for more flexibility.
 
@@ -170,9 +182,9 @@ To run the tests:
 
 Based on the initial analysis of the project, the following areas could be improved:
 
-* **Robustness and Error Handling** – implement retries, more specific exceptions and data validation.
+* **Robustness and Error Handling** – tasks include retries and handle missing indexes; further data validation could be added.
 * **Advanced Configuration** – externalize any hardcoded configuration.
-* **Logging** – integrate a detailed logging system.
+* **Logging** – tasks now use the Python logging module; future work may centralize log output.
 * **Automated Tests** – develop unit and integration tests.
 * **Dependency Management** – create and maintain a `requirements.txt` or `pyproject.toml`.
 * **Scalability** – explore concurrent/parallel execution of tasks for large data volumes.
